@@ -1,0 +1,23 @@
+#! /usr/bin/env ruby
+
+pos = ARGV.index('--')
+if pos
+  @paths = ARGV[0 ... pos].join(' ')
+  @test_args = ARGV[pos + 1 .. -1].join(' ')
+else
+  @paths = "app lib test spec"
+  @test_args = ARGV[0..-1].join(' ')
+end
+@test_file = @test_args.scan(/^.+.rb/).first
+
+if @paths == "glob"
+  search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
+  @paths = Dir.glob("**/#{search}")
+  @paths << @test_file
+  @paths = @paths.join(' ')
+end
+
+test_command = 'rspec' if @test_file.match(/_spec.rb/)
+test_command = 'ruby -Itest' if @test_file.match(/_test.rb/)
+
+exec "rego #{@paths} -- #{test_command} #{@test_args}"
