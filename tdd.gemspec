@@ -14,4 +14,6 @@ Gem::Specification.new do |gem|
   gem.name          = "tdd"
   gem.require_paths = ["lib"]
   gem.version       = Tdd::VERSION
+  
+  gem.add_runtime_dependency "rego"
 end
