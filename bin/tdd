@@ -5,7 +5,8 @@ if pos
   @paths = ARGV[0 ... pos].join(' ')
   @test_args = ARGV[pos + 1 .. -1].join(' ')
 else
-  @paths = "app lib test spec"
+  common_paths = %w[app lib config test spec]
+  @paths = common_paths.select{|path| test(?d, path)}
   @test_args = ARGV[0..-1].join(' ')
 end
 @test_file = @test_args.scan(/^.+.rb/).first
@@ -29,11 +30,7 @@ if @paths == "controller"
   @paths = @paths.join(' ')
 end
 
-if @paths.empty?
-  common_paths = %w[app lib config test spec]
-  common_paths.each{|path| @paths << paths if test(?d, path)}
-end
-
+puts @paths.inspect
 test_command = 'rspec' if @test_file.match(/_spec.rb/)
 test_command = 'ruby -Itest' if @test_file.match(/_test.rb/)
 
