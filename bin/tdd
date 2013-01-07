@@ -1,37 +1,261 @@
 #! /usr/bin/env ruby
 
-pos = ARGV.index('--')
-if pos
-  @paths = ARGV[0 ... pos].join(' ')
-  @test_args = ARGV[pos + 1 .. -1].join(' ')
-else
-  common_paths = %w[app lib config test spec]
-  @paths = common_paths.select{|path| test(?d, path)}
-  @test_args = ARGV[0..-1].join(' ')
-end
-@test_file = @test_args.scan(/^.+.rb/).first
+Main {
 
-if @paths == "glob"
-  search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
-  @paths = Dir.glob("**/#{search}")
-  @paths << @test_file
-  @paths = @paths.join(' ')
-end
+  name <<-__
 
-if @paths == "controller"
-  resource = File.basename(@test_file).gsub(/(_controller_spec.rb|_controller_test.rb)/, '')
-  search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
-  puts "="*45
-  puts resource
-  puts "="*45
-  @paths = Dir.glob("app/views/#{resource}/**")
-  @paths += Dir.glob("**/#{search}")
-  @paths << @test_file
-  @paths = @paths.join(' ')
-end
+    tdd
 
-puts @paths.inspect
-test_command = 'rspec' if @test_file.match(/_spec.rb/)
-test_command = 'ruby -Itest' if @test_file.match(/_test.rb/)
+  __
 
-exec "rego #{@paths} -- #{test_command} #{@test_args}"
+  description <<-__
+
+    watch files and run test unit or rspec tests when they change
+  __
+
+  examples <<-__
+
+    ### gem install tdd
+
+    # Using with test/unit:
+      $ tdd test/unit/some_unit_test.rb
+
+    # Using with rspec:
+      $ tdd spec/some_spec.rb
+
+    # You can pass arguments you would normally pass to `ruby -Itest` or `rspec`
+      $ tdd test/unit/some_unit_test.rb -n /some_tests_name/
+      $ tdd spec/some_spec.rb:42 --fail-fast
+
+    # tdd will by default watch files in app, lib, config, test, and spec
+    # directories, if they exist, and run your test command if any file its 
+    # watching changes.
+    
+    # You can tell it to find a similarly named file to your test to watch:
+      $ tdd glob -- test/unit/some_unit_test.rb
+    # will look for some_unit.rb in your project and watch it for changes, along
+    # with the test file.
+    
+    # In a Rails project you can ask tdd to watch view and controller files
+    # related to a functional or controller test:
+      $ tdd controller -- test/functional/users_controller_test.rb
+    # will watch all view files in app/views/users, the users_controller and the
+    # test file for changes.
+  __
+
+  def run
+    parse_the_command_line
+    print_a_summary_of_watched_files
+    loop_watching_files_and_running_commands
+  end
+
+  def parse_the_command_line
+
+    pos = ARGV.index('--')
+    if pos
+      @paths = ARGV[0 ... pos].join(' ')
+      @test_args = ARGV[pos + 1 .. -1].join(' ')
+    else
+      common_paths = %w[app lib config test spec]
+      @paths = common_paths.select{|path| test(?d, path)}.join(' ')
+      @test_args = ARGV[0..-1].join(' ')
+    end
+    @test_file = @test_args.scan(/^.+.rb/).first
+
+    if @paths == "glob"
+      search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
+      @paths = Dir.glob("**/#{search}")
+      @paths << @test_file
+      @paths = @paths.join(' ')
+    end
+
+    if @paths == "controller"
+      resource = File.basename(@test_file).gsub(/(_controller_spec.rb|_controller_test.rb)/, '')
+      search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
+      puts "="*45
+      puts resource
+      puts "="*45
+      @paths = Dir.glob("app/views/#{resource}/**")
+      @paths += Dir.glob("**/#{search}")
+      @paths << @test_file
+      @paths = @paths.join(' ')
+    end
+
+    puts @paths.inspect
+    test_command = 'rspec' if @test_file.match(/_spec.rb/)
+    test_command = 'ruby -Itest' if @test_file.match(/_test.rb/)
+    @command = "#{test_command} #{@test_args}"
+
+    @paths = %w[.] if @paths.empty?
+
+    @paths.map!{|path| test(?d, path) ? [path, Dir.glob(File.join(path, '**/**'))] : path}
+    @paths.flatten!
+    @paths.compact!
+    @paths.uniq!
+    @paths.map! do |path|
+      begin
+        Pathname.new(path).realpath.to_s
+      rescue Object
+        nil
+      end
+    end
+    @paths.compact!
+  end
+
+  def print_a_summary_of_watched_files
+    puts "## #{ @command }"
+    puts "#"
+    puts @paths.join("\n")
+    puts
+  end
+
+  def loop_watching_files_and_running_commands
+    directories = []
+    files = []
+    @paths.each do |path|
+      if test(?d, path)
+        directories.push(path)
+      else
+        files.push(path)
+        directories.push(File.dirname(path))
+      end
+    end
+    directories.uniq!
+    files.uniq!
+
+    stats = {} 
+
+    files.each do |file|
+      begin
+        stats[file] = File.stat(file)
+      rescue
+        nil
+      end
+    end
+
+    fsevent = FSEvent.new
+
+    n = '0'
+    line = '#' * 42
+    $running = false
+
+    rego = proc do |*args|
+      entry = args.shift
+      cmd = entry ? @command.gsub(/@/, entry) : @command
+      puts line
+      say("# rego.#{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ cmd }", :color => :magenta)
+      puts
+      system(cmd)
+      puts
+      say("# rego.#{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ $?.exitstatus }", :color => :yellow)
+      puts
+      n.succ!
+    end
+
+    rego[ false ]
+
+    fsevent.watch(directories) do |*args|
+      unless $running
+        $running = true
+
+        args.flatten.each do |dir|
+          glob = File.join(dir, '**/**')
+          entries = Dir.glob(glob)
+
+          entries.each do |entry|
+            entry = File.expand_path(entry)
+            next unless stats.has_key?(entry)
+
+            begin
+              stats[entry] ||= File.stat(entry)
+              before = stats[entry]
+              after = File.stat(entry)
+            rescue
+              next
+            end
+
+            unless before.mtime == after.mtime
+              stats[entry] = after
+              rego[ entry ]
+            end
+          end
+        end
+      end
+      $running = false
+    end
+
+    fsevent.run
+  end
+}
+
+
+BEGIN {
+  ANSI = {
+    :clear      => "\e[0m",
+    :reset      => "\e[0m",
+    :erase_line => "\e[K",
+    :erase_char => "\e[P",
+    :bold       => "\e[1m",
+    :dark       => "\e[2m",
+    :underline  => "\e[4m",
+    :underscore => "\e[4m",
+    :blink      => "\e[5m",
+    :reverse    => "\e[7m",
+    :concealed  => "\e[8m",
+    :black      => "\e[30m",
+    :red        => "\e[31m",
+    :green      => "\e[32m",
+    :yellow     => "\e[33m",
+    :blue       => "\e[34m",
+    :magenta    => "\e[35m",
+    :cyan       => "\e[36m",
+    :white      => "\e[37m",
+    :on_black   => "\e[40m",
+    :on_red     => "\e[41m",
+    :on_green   => "\e[42m",
+    :on_yellow  => "\e[43m",
+    :on_blue    => "\e[44m",
+    :on_magenta => "\e[45m",
+    :on_cyan    => "\e[46m",
+    :on_white   => "\e[47m"
+  }
+
+  module Kernel
+  private
+    def say(phrase, *args)
+      options = args.last.is_a?(Hash) ? args.pop : {}
+      options[:color] = args.shift.to_s.to_sym unless args.empty?
+      keys = options.keys
+      keys.each{|key| options[key.to_s.to_sym] = options.delete(key)}
+
+      color = options[:color]
+      bold = options.has_key?(:bold)
+
+      parts = [phrase]
+
+      if STDOUT.tty?
+        parts.unshift(ANSI[color]) if color
+        parts.unshift(ANSI[:bold]) if bold
+        parts.push(ANSI[:clear]) if parts.size > 1
+      end
+
+      method = options[:method] || :puts
+
+      send(method, parts.join)
+    end
+  end
+
+  require 'pathname'
+  this = Pathname.new(__FILE__).realpath.to_s
+  bindir = File.dirname(this)
+  rootdir = File.dirname(bindir)
+  libdir = File.join(rootdir, 'lib')
+  rego = File.join(libdir, 'rego.rb')
+
+  require(rego)
+
+  STDOUT.sync = true
+  STDERR.sync = true
+  STDIN.sync = true
+}
+
