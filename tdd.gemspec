@@ -15,5 +15,5 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = Tdd::VERSION
   
-  gem.add_runtime_dependency "rego"
+  gem.add_runtime_dependency "rego", "~> 1.0.0"
 end
