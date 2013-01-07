@@ -30,7 +30,9 @@ Main {
     # tdd will by default watch files in app, lib, config, test, and spec
     # directories, if they exist, and run your test command if any file its 
     # watching changes.
-    
+   
+    # You can specify which files to watch:
+      $ 
     # You can tell it to find a similarly named file to your test to watch:
       $ tdd glob -- test/unit/some_unit_test.rb
     # will look for some_unit.rb in your project and watch it for changes, along
@@ -53,23 +55,21 @@ Main {
 
     pos = ARGV.index('--')
     if pos
-      @paths = ARGV[0 ... pos].join(' ')
+      @paths = ARGV[0 ... pos]
       @test_args = ARGV[pos + 1 .. -1].join(' ')
     else
-      common_paths = %w[app lib config test spec]
-      @paths = common_paths.select{|path| test(?d, path)}.join(' ')
+      @paths = %w[app lib config test spec]
       @test_args = ARGV[0..-1].join(' ')
     end
     @test_file = @test_args.scan(/^.+.rb/).first
 
-    if @paths == "glob"
+    if @paths.first == "glob"
       search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
       @paths = Dir.glob("**/#{search}")
       @paths << @test_file
-      @paths = @paths.join(' ')
     end
 
-    if @paths == "controller"
+    if @paths.first == "controller"
       resource = File.basename(@test_file).gsub(/(_controller_spec.rb|_controller_test.rb)/, '')
       search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
       puts "="*45
@@ -78,7 +78,6 @@ Main {
       @paths = Dir.glob("app/views/#{resource}/**")
       @paths += Dir.glob("**/#{search}")
       @paths << @test_file
-      @paths = @paths.join(' ')
     end
 
     puts @paths.inspect
