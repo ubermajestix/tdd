@@ -10,12 +10,10 @@ Main {
 
   description <<-__
 
-    watch files and run test unit or rspec tests when they change
+    watch files and run test/unit or rspec tests when they change
   __
 
   examples <<-__
-
-    ### gem install tdd
 
     # Using with test/unit:
       $ tdd test/unit/some_unit_test.rb
@@ -81,7 +79,6 @@ Main {
       @paths << @test_file
     end
 
-    puts @paths.inspect
     test_command = 'rspec' if @test_file.match(/_spec.rb/)
     test_command = 'ruby -Itest' if @test_file.match(/_test.rb/)
     @command = "#{test_command} #{@test_args}"
@@ -105,7 +102,11 @@ Main {
   def print_a_summary_of_watched_files
     puts "## #{ @command }"
     puts "#"
-    puts @paths.join("\n")
+    if @paths.length > 15
+      puts "Watching #{@paths.length} files"
+    else
+      puts @paths.join("\n")
+    end
     puts
   end
 
