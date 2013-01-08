@@ -28,7 +28,7 @@ Main {
     # tdd will by default watch files in app, lib, config, test, and spec
     # directories, if they exist, and run your test command if any file its 
     # watching changes.
-   
+
     # You can specify which files to watch:
       $ tdd lib/some_unit.rb config/setup.rb -- test/unit/some_unit.rb -n/some_test_name/
 
@@ -36,7 +36,7 @@ Main {
       $ tdd glob -- test/unit/some_unit_test.rb
     # will look for some_unit.rb in your project and watch it for changes, along
     # with the test file.
-    
+
     # In a Rails project you can ask tdd to watch view and controller files
     # related to a functional or controller test:
       $ tdd controller -- test/functional/users_controller_test.rb
@@ -144,11 +144,11 @@ Main {
       entry = args.shift
       cmd = entry ? @command.gsub(/@/, entry) : @command
       puts line
-      say("# rego.#{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ cmd }", :color => :magenta)
+      say("# starting test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ cmd }", :color => :magenta)
       puts
       system(cmd)
       puts
-      say("# rego.#{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ $?.exitstatus }", :color => :yellow)
+      say("# finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ $?.exitstatus }", :color => :yellow)
       puts
       n.succ!
     end
