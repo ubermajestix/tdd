@@ -1,29 +1,65 @@
-# Tdd
+tdd
+===  
 
-TODO: Write a gem description
+Watch files and run test/unit or rspec tests when those files change.
 
-## Installation
+Is it awesome?
+--------------
+Yes.
 
-Add this line to your application's Gemfile:
 
-    gem 'tdd'
+Examples
+--------
 
-And then execute:
+Using with test/unit:
 
-    $ bundle
+    $ tdd test/unit/some_unit_test.rb
 
-Or install it yourself as:
+Using with rspec:
 
-    $ gem install tdd
+    $ tdd spec/some_spec.rb
 
-## Usage
+You can pass arguments you would normally pass to `ruby -Itest` or `rspec`
+  
+    $ tdd test/unit/some_unit_test.rb -n /some_test_name/
+    $ tdd spec/some_spec.rb:42 --fail-fast
 
-TODO: Write usage instructions here
+By default, tdd will watch files in app, lib, config, test, and spec
+directories, if they exist, and run your test command if any file being
+watched changes.
 
-## Contributing
+You can specify which files to watch (note the double dashes `--`
+separating the files to watch from the test file and options):
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Added some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+    $ tdd lib/some_unit.rb config/setup.rb -- test/unit/some_unit.rb -n/some_test_name/
+
+You can tell it to find a similarly named file to your test to watch
+with glob mode:
+
+    $ tdd glob -- test/unit/some_unit_test.rb
+
+This will look for `some_unit.rb` in your project and watch it for changes,
+along with the test file.
+
+In a Rails project you can ask tdd to watch view and controller files
+related to a functional or controller test:
+
+    $ tdd controller -- test/functional/users_controller_test.rb
+
+will watch all view files in app/views/users, the users_controller and the
+test file for changes.
+
+Isn't this what Guard does?
+---------------------------
+Yeah, but its more flexible. I found myself wanting to use rspec's
+feature of running a single test, or group of tests, over and over while
+I tdd'd a class. With Guard, I would have to change the Guardfile to
+use different command line options for rspec. Maybe there's a way to
+solve this now, but in general Guard is just too much overhead for me.
+
+This library heavily borrows from rego by Ara Howard. Its a really
+useful tool and I used it to watch project files and run tests when they
+changed. But bouncing between projects that use test/unit and
+rspec several times a day there was still overhead in typing out the
+list of files to watch and the full test command for rego to work.
+
