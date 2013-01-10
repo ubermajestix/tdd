@@ -11,13 +11,20 @@ Yes.
 Examples
 --------
 
-Using with test/unit:
+Use with test/unit:
 
     $ tdd test/unit/some_unit_test.rb
 
-Using with rspec:
+Use with rspec:
 
     $ tdd spec/some_spec.rb
+    # Run all specs
+    $ tdd spec
+
+Use with rake:
+
+    $ tdd rake test:functional
+    $ tdd rake spec
 
 You can pass arguments you would normally pass to `ruby -Itest` or `rspec`
   

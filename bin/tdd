@@ -19,13 +19,20 @@ tdd watches files and runs test/unit or rspec tests when they change.
   __
 
   examples <<-__
-Using with test/unit:
+Use with test/unit:
 
     $ tdd test/unit/some_unit_test.rb
 
-Using with rspec:
+Use with rspec:
 
     $ tdd spec/some_spec.rb
+    # Run all specs
+    $ tdd spec
+
+Use with rake:
+
+    $ tdd rake test:functional
+    $ tdd rake spec
 
 You can pass arguments you would normally pass to `ruby -Itest` or `rspec`
   
@@ -56,6 +63,7 @@ related to a functional or controller test:
 
 will watch all view files in app/views/users, the users_controller and the
 test file for changes.
+
   __
 
   def run
@@ -65,6 +73,10 @@ test file for changes.
   end
 
   def parse_the_command_line
+    if ARGV.empty?
+      puts usage['examples']
+      exit 1
+    end
 
     pos = ARGV.index('--')
     if pos
@@ -74,6 +86,7 @@ test file for changes.
       @paths = %w[app lib config test spec]
       @test_args = ARGV[0..-1].join(' ')
     end
+    
     @test_file = @test_args.scan(/^.+.rb/).first
 
     if @paths.first == "glob"
@@ -93,8 +106,19 @@ test file for changes.
       @paths << @test_file
     end
 
-    test_command = 'rspec' if @test_file.match(/_spec.rb/)
-    test_command = 'ruby -Itest' if @test_file.match(/_test.rb/)
+    test_command = 'rspec' if @test_args.match(/^spec$/) || @test_file && @test_file.match(/_spec.rb/)
+    test_command = 'ruby -Itest' if @test_file && @test_file.match(/_test.rb/)
+    if @test_args.match(/^rake/)
+      test_command = @test_args
+      @test_args = nil
+    end
+
+    if test_command.nil?
+      say("No test or spec command could be built.", :color => :red)
+      say("Pass -h option to see examples.", :color => :red)
+      exit 1
+    end
+    
     @command = "#{test_command} #{@test_args}"
 
     @paths = %w[.] if @paths.empty?
