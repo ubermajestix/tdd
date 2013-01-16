@@ -97,14 +97,13 @@ test file for changes.
   end
 
   def print_a_summary_of_watched_files
-    puts "## #{ @command }"
-    puts "#"
+    puts "Running: #{ @command }"
     if @paths.length > 15
-      puts "Watching #{@paths.length} files"
+       puts "Watching: #{@paths.length} files"
     else
+      puts "Watching:"
       puts @paths.join("\n")
     end
-    puts
   end
 
   def loop_watching_files_and_running_commands
