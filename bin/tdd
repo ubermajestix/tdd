@@ -67,60 +67,19 @@ test file for changes.
   __
 
   def run
+    print_usage_and_exit if ARGV.empty?
     parse_the_command_line
     print_a_summary_of_watched_files
     loop_watching_files_and_running_commands
   end
 
+  def print_usage_and_exit
+    puts usage['examples']
+    exit 1
+  end
+
   def parse_the_command_line
-    if ARGV.empty?
-      puts usage['examples']
-      exit 1
-    end
-
-    pos = ARGV.index('--')
-    if pos
-      @paths = ARGV[0 ... pos]
-      @test_args = ARGV[pos + 1 .. -1].join(' ')
-    else
-      @paths = %w[app lib config test spec]
-      @test_args = ARGV[0..-1].join(' ')
-    end
-    
-    @test_file = @test_args.scan(/^.+.rb/).first
-
-    if @paths.first == "glob"
-      search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
-      @paths = Dir.glob("**/#{search}")
-      @paths << @test_file
-    end
-
-    if @paths.first == "controller"
-      resource = File.basename(@test_file).gsub(/(_controller_spec.rb|_controller_test.rb)/, '')
-      search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
-      puts "="*45
-      puts resource
-      puts "="*45
-      @paths = Dir.glob("app/views/#{resource}/**")
-      @paths += Dir.glob("**/#{search}")
-      @paths << @test_file
-    end
-
-    test_command = 'rspec' if @test_args.match(/^spec$/) || @test_file && @test_file.match(/_spec.rb/)
-    test_command = 'ruby -Itest' if @test_file && @test_file.match(/_test.rb/)
-    if @test_args.match(/^rake/)
-      test_command = @test_args
-      @test_args = nil
-    end
-
-    if test_command.nil?
-      say("No test or spec command could be built.", :color => :red)
-      say("Pass -h option to see examples.", :color => :red)
-      exit 1
-    end
-    
-    @command = "#{test_command} #{@test_args}"
-
+    @paths, @command = Tdd::CommandLineParser.parse
     @paths = %w[.] if @paths.empty?
 
     @paths.map!{|path| test(?d, path) ? [path, Dir.glob(File.join(path, '**/**'))] : path}
