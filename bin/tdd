@@ -36,8 +36,8 @@ Use with rake:
 
 You can pass arguments you would normally pass to `ruby -Itest` or `rspec`
   
-    $ tdd test/unit/some_unit_test.rb -n /some_test_name/
-    $ tdd spec/some_spec.rb:42 --fail-fast
+    $ tdd -- test/unit/some_unit_test.rb -n /some_test_name/
+    $ tdd -- spec/some_spec.rb:42 --fail-fast
 
 By default, tdd will watch files in app, lib, config, test, and spec
 directories, if they exist, and run your test command if any file being
