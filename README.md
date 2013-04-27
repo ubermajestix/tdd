@@ -1,6 +1,9 @@
 tdd
 ===  
 
+[![Gem Version](https://badge.fury.io/rb/tdd.png)](http://badge.fury.io/rb/tdd) 
+[![Code Climate](https://codeclimate.com/github/ubermajestix/tdd.png)](https://codeclimate.com/github/ubermajestix/tdd)
+
 Watch files and run test/unit or rspec tests when those files change.
 
 Is it awesome?

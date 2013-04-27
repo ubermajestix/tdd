@@ -1,7 +1,7 @@
 class Tdd::CommandLineParser
   def self.parse
     parser = self.new
-    [parser.paths, parser.test_command]
+    [parser.paths.flatten, parser.test_command]
   end
 
   attr_accessor :paths, :test_framework
@@ -12,11 +12,12 @@ class Tdd::CommandLineParser
       @paths = ARGV[0 ... pos]
       @test_args = ARGV[pos + 1 .. -1].join(' ')
     else
-      @paths = %w[app lib config test spec]
+      @paths = []
       @test_args = ARGV[0..-1].join(' ')
     end
     @test_file = @test_args.scan(/^.+.rb/).first
-    parse_glob_mode
+    glob_for_test_file_matches
+    parse_all_files_mode
     parse_controller_mode
     parse_test_framework
   end
@@ -33,11 +34,16 @@ class Tdd::CommandLineParser
     exit 1
   end
 
-  def parse_glob_mode
-    if @paths.first == "glob"
-      search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
-      @paths = Dir.glob("**/#{search}")
-      @paths << @test_file
+  def glob_for_test_file_matches
+    return unless @test_file
+    search = File.basename(@test_file).gsub(/(_spec|_test)/, '')
+    @paths << Dir.glob("**/#{search}")
+    @paths << @test_file
+  end
+
+  def parse_all_files_mode
+    if @paths.first == 'all'
+      @paths = %w[app lib config test spec]
     end
   end
 

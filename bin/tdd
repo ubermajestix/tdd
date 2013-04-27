@@ -39,30 +39,43 @@ You can pass arguments you would normally pass to `ruby -Itest` or `rspec`
     $ tdd -- test/unit/some_unit_test.rb -n /some_test_name/
     $ tdd -- spec/some_spec.rb:42 --fail-fast
 
-By default, tdd will watch files in app, lib, config, test, and spec
-directories, if they exist, and run your test command if any file being
-watched changes.
+By default, tdd will glob for files that match your test file and run your test
+command if any file being watched changes.
 
-You can specify which files to watch (note the double dashes `--`
+    $ tdd test/unit/some_class_test.rb
+    Running: ruby -I test test/unit/some_class_test.rb
+    Watching:
+    /Users/ubermajestix/work/awesome_app/lib/some_class.rb
+    /Users/ubermajestix/work/awesome_app/test/unit/some_class_test.rb
+    ##########################################
+
+You can specify additional files to watch (note the double dashes `--`
 separating the files to watch from the test file and options):
 
-    $ tdd lib/some_unit.rb config/setup.rb -- test/unit/some_unit.rb -n/some_test_name/
+    $ tdd lib/other_class.rb config/setup.rb -- test/unit/some_class_test.rb -n/some_test_name/
+    Running: ruby -I test test/unit/some_class_test.rb -n/some_test_name/
+    Watching:
+    /Users/ubermajestix/work/awesome_app/config/setup.rb
+    /Users/ubermajestix/work/awesome_app/lib/some_class.rb
+    /Users/ubermajestix/work/awesome_app/lib/other_class.rb
+    /Users/ubermajestix/work/awesome_app/test/unit/some_class_test.rb
+    ##########################################
 
-You can tell it to find a similarly named file to your test to watch
-with glob mode:
-
-    $ tdd glob -- test/unit/some_unit_test.rb
-
-This will look for `some_unit.rb` in your project and watch it for changes,
-along with the test file.
 
 In a Rails project you can ask tdd to watch view and controller files
 related to a functional or controller test:
 
-    $ tdd controller -- test/functional/users_controller_test.rb
+    $ tdd controller -- spec/controllers/users_controller_spec.rb
+    Running: rspec spec/controllers/users_controller_spec.rb
+    Watching:
+    /Users/ubermajestix/work/awesome_rails_app/app/controllers/users_controller.rb
+    /Users/ubermajestix/work/awesome_rails_app/app/views/index.html.erb
+    /Users/ubermajestix/work/awesome_rails_app/app/views/show.html.erb
+    /Users/ubermajestix/work/awesome_rails_app/app/views/edit.html.erb
+    /Users/ubermajestix/work/awesome_rails_app/app/views/_fields.html.erb
+    /Users/ubermajestix/work/awesome_rails_app/spec/controllers/users_controller_spec.rb
+    ##########################################
 
-will watch all view files in app/views/users, the users_controller and the
-test file for changes.
 
   __
 
@@ -98,8 +111,10 @@ test file for changes.
 
   def print_a_summary_of_watched_files
     puts "Running: #{ @command }"
-    if @paths.length > 15
-       puts "Watching: #{@paths.length} files"
+    if @paths.length > 25
+       current_dir = Dir.pwd
+       dirs = @paths.map{|p| p.gsub(Dir.pwd + "/", '').split('/').first + "/"}.uniq
+       puts "Watching #{@paths.length} files in #{dirs.join(' ')}"
     else
       puts "Watching:"
       puts @paths.join("\n")
@@ -141,10 +156,12 @@ test file for changes.
       cmd = entry ? @command.gsub(/@/, entry) : @command
       puts line
       say("# starting test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ cmd }", :color => :magenta)
+      # TODO if blink1 installed - change its color to purple until the tests are over
       puts
       system(cmd)
       puts
       say("# finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ $?.exitstatus }", :color => :yellow)
+      # TODO if blink1 installed - change its color to yellow and fade out after 30seconds.
       puts
       n.succ!
     end
