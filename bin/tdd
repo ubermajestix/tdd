@@ -163,9 +163,9 @@ related to a functional or controller test:
       say("# finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ $?.exitstatus }", :color => :yellow)
       # TODO if blink1 installed - change its color to yellow and fade out after 30seconds.
       if tests_pass
-        system("command -v blink1-tool && blink1-tool -d0 --rgb 0,255,0 --blink 3 > /dev/null &")
+        system("command -v blink1-tool > /dev/null && blink1-tool -d0 --rgb 0,255,0 --blink 3 > /dev/null &")
       else
-        system("command -v blink1-tool && blink1-tool -d0 --rgb 255,0,0 --blink 3 > /dev/null &")
+        system("command -v blink1-tool > /dev/null && blink1-tool -d0 --rgb 255,0,0 --blink 3 > /dev/null &")
       end
       puts
       n.succ!
