@@ -134,7 +134,6 @@ related to a functional or controller test:
     end
     directories.uniq!
     files.uniq!
-
     stats = {} 
 
     files.each do |file|
@@ -144,24 +143,20 @@ related to a functional or controller test:
         nil
       end
     end
-
     fsevent = FSEvent.new
 
     n = '0'
     line = '#' * 42
     $running = false
 
-    tdd = proc do |*args|
-      entry = args.shift
-      cmd = entry ? @command.gsub(/@/, entry) : @command
+    tdd = proc do |files|
       puts line
-      say("# starting test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ cmd }", :color => :magenta)
-      # TODO if blink1 installed - change its color to purple until the tests are over
+      say("# starting test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ @command }", :color => :magenta)
+      say("# #{files.size > 1 ? 'files' : 'file'} changed: #{files.join(', ')}", :color => :magenta) if files && files.any?
       puts
-      tests_pass = system(cmd)
+      tests_pass = system(@command)
       puts
       say("# finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ $?.exitstatus }", :color => :yellow)
-      # TODO if blink1 installed - change its color to yellow and fade out after 30seconds.
       if tests_pass
         system("command -v blink1-tool > /dev/null && blink1-tool -d0 --rgb 0,255,0 --blink 3 > /dev/null &")
       else
@@ -171,12 +166,12 @@ related to a functional or controller test:
       n.succ!
     end
 
-    tdd[ false ]
+    tdd.call
 
     fsevent.watch(directories) do |*args|
+      entries_changed = []
       unless $running
         $running = true
-
         args.flatten.each do |dir|
           glob = File.join(dir, '**/**')
           entries = Dir.glob(glob)
@@ -192,14 +187,14 @@ related to a functional or controller test:
             rescue
               next
             end
-
             unless before.mtime == after.mtime
               stats[entry] = after
-              tdd[ entry ]
+              entries_changed << entry
             end
           end
         end
       end
+      tdd.call(entries_changed) if entries_changed.any?
       $running = false
     end
 
