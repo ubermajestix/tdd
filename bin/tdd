@@ -1,6 +1,7 @@
 #! /usr/bin/env ruby
 
 require 'tdd'
+require 'ruby_gntp'
 
 # The majority of this file has been adapted from Ara Howard's rego gem.
 # You can find the source here: http://github.com/ahoward/rego.
@@ -91,7 +92,18 @@ related to a functional or controller test:
     /Users/ubermajestix/work/awesome_rails_app/spec/controllers/users_controller_spec.rb
     ##########################################
 
+Supports Growl notifs. To enable, pass in --growl like so:
+
+    $ tdd controller -growl -- spec/controllers/users_controller_spec.rb
+
+In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
   __
+
+  option('growl'){
+    default false
+    cast :boolean
+    description "Send growl notifications for finished tests."
+  }
 
   option('gitignore'){
     argument :required
@@ -105,7 +117,18 @@ related to a functional or controller test:
     parse_options
     parse_the_command_line
     print_a_summary_of_watched_files
+    register_growl if @use_growl
     loop_watching_files_and_running_commands
+  end
+
+  def register_growl
+    @growl = GNTP.new("tdd")
+    @growl.register({
+      :notifications => [
+        { :name => "passed", :enabled => true, },
+        { :name => "failed", :enabled => true, }
+      ]
+    })
   end
 
   def print_usage_and_exit
@@ -115,7 +138,8 @@ related to a functional or controller test:
 
   def parse_options
     @gitignore = params['gitignore'].value
-    ARGV.delete_if{|arg| arg =~ /--gitignore.*/}
+    @use_growl = params['growl'].value
+    ARGV.delete_if{|arg| arg =~ /--gitignore.*|--growl.*/}
   end
 
   def parse_the_command_line
@@ -175,6 +199,17 @@ related to a functional or controller test:
     end
   end
 
+  def growl(name, title, text, sticky = false)
+    if @growl 
+      @growl.notify({
+        :name  => name,
+        :title => title,
+        :text  => text,
+        :sticky => sticky,
+      })
+    end
+  end
+
   def loop_watching_files_and_running_commands
     directories = []
     files = []
@@ -208,13 +243,17 @@ related to a functional or controller test:
       say("# starting test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ @command }", :color => :magenta)
       say("# #{files.size > 1 ? 'files' : 'file'} changed: #{files.join(', ')}", :color => :magenta) if files && files.any?
       puts
-      tests_pass = system(@command)
-      puts
+      tests_out = `#{@command}`  
+      tests_pass = $?.success?
+      puts tests_out 
+
       say("# finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ $?.exitstatus }", :color => :yellow)
       if tests_pass
         system("command -v blink1-tool > /dev/null && blink1-tool -d0 --rgb 0,255,0 --blink 3 > /dev/null &")
+        growl("passed", "tdd - Tests Passed", tests_out)
       else
         system("command -v blink1-tool > /dev/null && blink1-tool -d0 --rgb 255,0,0 --blink 3 > /dev/null &")
+        growl("failed", "tdd - Tests Failed", tests_out, true)
       end
       puts
       n.succ!
