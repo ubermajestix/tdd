@@ -38,10 +38,19 @@ By default, tdd will watch files in app, lib, config, test, and spec
 directories, if they exist, and run your test command if any file being
 watched changes.
 
+tdd also ignores, by default, any files ignored by git, either through the local .gitignore 
+file or the global ~/.gitignore_global . You can turn this off by passing --gitignore=false:
+
+    $ tdd --gitignore=false some_file.rb -- test/unit/some_unit.rb -n/some_test_name/
+
 You can specify which files to watch (note the double dashes `--`
 separating the files to watch from the test file and options):
 
     $ tdd lib/some_unit.rb config/setup.rb -- test/unit/some_unit.rb -n/some_test_name/
+
+You can use wildcards in any of the watched filepaths:
+
+    $ tdd lib/other_class.rb app/models/*class.rb -- test/unit/some_class_test.rb -n/some_test_name/
 
 You can tell it to find a similarly named file to your test to watch
 with glob mode:
