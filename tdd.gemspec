@@ -14,7 +14,9 @@ Gem::Specification.new do |gem|
   gem.name          = "tdd"
   gem.require_paths = ["lib"]
   gem.version       = Tdd::VERSION
+  
 
   gem.add_runtime_dependency "main", "~> 5.0"
   gem.add_runtime_dependency "rb-fsevent", "~> 0.9"
+  gem.add_runtime_dependency "ruby_gntp"
 end
