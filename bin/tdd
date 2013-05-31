@@ -49,6 +49,11 @@ command if any file being watched changes.
     /Users/ubermajestix/work/awesome_app/test/unit/some_class_test.rb
     ##########################################
 
+tdd also ignores, by default, any files ignored by git, either through the local .gitignore 
+file or the global ~/.gitignore_global. You can turn this off by passing --gitignore=false:
+
+    $ tdd --gitignore=false some_file.rb -- test/unit/some_unit.rb -n/some_test_name/
+
 You can specify additional files to watch (note the double dashes `--`
 separating the files to watch from the test file and options):
 
@@ -61,6 +66,16 @@ separating the files to watch from the test file and options):
     /Users/ubermajestix/work/awesome_app/test/unit/some_class_test.rb
     ##########################################
 
+You can use wildcards in any of the watched filepaths:
+
+    $ tdd lib/other_class.rb app/models/*class.rb -- test/unit/some_class_test.rb -n/some_test_name/
+    Running: ruby -I test test/unit/some_class_test.rb -n/some_test_name/
+    Watching:
+    /Users/ubermajestix/work/awesome_app/app/models/some_class.rb
+    /Users/ubermajestix/work/awesome_app/app/models/some_other_class.rb
+    /Users/ubermajestix/work/awesome_app/app/models/some_nifty_class.rb
+    /Users/ubermajestix/work/awesome_app/app/models/some_hoopy_class.rb
+    ##########################################
 
 In a Rails project you can ask tdd to watch view and controller files
 related to a functional or controller test:
@@ -76,11 +91,18 @@ related to a functional or controller test:
     /Users/ubermajestix/work/awesome_rails_app/spec/controllers/users_controller_spec.rb
     ##########################################
 
-
   __
+
+  option('gitignore'){
+    argument :required
+    default true
+    cast :boolean
+    description "Don't watch files/dirs if they are ignored by git. Defaults to true."
+  }
 
   def run
     print_usage_and_exit if ARGV.empty?
+    parse_options
     parse_the_command_line
     print_a_summary_of_watched_files
     loop_watching_files_and_running_commands
@@ -91,22 +113,54 @@ related to a functional or controller test:
     exit 1
   end
 
+  def parse_options
+    @gitignore = params['gitignore'].value
+    ARGV.delete_if{|arg| arg =~ /--gitignore.*/}
+  end
+
   def parse_the_command_line
     @paths, @command = Tdd::CommandLineParser.parse
     @paths = %w[.] if @paths.empty?
+    expand_all_file_paths_in_array(@paths)
+    
+    if @gitignore
+      say("ignoring gitignore files...", :color => :yellow)
+      @paths = @paths - git_ignored
+    end
+  end
 
-    @paths.map!{|path| test(?d, path) ? [path, Dir.glob(File.join(path, '**/**'))] : path}
-    @paths.flatten!
-    @paths.compact!
-    @paths.uniq!
-    @paths.map! do |path|
+  def git_ignored
+    @all_git_ignored ||= %w(~/.gitignore_global .gitignore).reduce([]) do |all_ignored, file| 
+      if File.exists?(file = File.expand_path(file))
+        all_ignored += Pathname.new(file).read.split("\n").reject{|i| i =~ /^#.*|(^\s*$)/}
+      end
+      all_ignored
+    end
+    expand_all_file_paths_in_array(@all_git_ignored)
+  end
+
+  def expand_all_file_paths_in_array(paths)
+    paths.map! do |path| 
+      if test(?d, path) 
+        [path, Dir.glob(File.join(path, '**/**'))] 
+      elsif path =~ /\*/
+        Dir.glob(path)
+      else
+        path
+      end
+    end
+    paths.flatten!
+    paths.compact!
+    paths.uniq!
+    paths.map! do |path|
       begin
         Pathname.new(path).realpath.to_s
       rescue Object
         nil
       end
     end
-    @paths.compact!
+    paths.compact!
+    paths
   end
 
   def print_a_summary_of_watched_files
