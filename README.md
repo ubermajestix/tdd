@@ -68,6 +68,12 @@ related to a functional or controller test:
 will watch all view files in app/views/users, the users_controller and the
 test file for changes.
 
+Supports Growl notifs. To enable, pass in --growl like so:
+
+    $ tdd controller --growl -- spec/controllers/users_controller_spec.rb
+
+In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
+
 Isn't this what Guard does?
 ---------------------------
 Yeah, but its more flexible. I found myself wanting to use rspec's
