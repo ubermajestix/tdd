@@ -5,7 +5,7 @@ tdd
 [![Code Climate](https://codeclimate.com/github/ubermajestix/tdd.png)](https://codeclimate.com/github/ubermajestix/tdd)
 
 ####A simple command line tool for running tests when files change. 
-#####Yes, it is awesome.
+#####Yes, it is awesome. :red_circle: :green_heart: :repeat:
 
 Examples
 --------
