@@ -4,7 +4,7 @@ tdd
 [![Gem Version](https://badge.fury.io/rb/tdd.png)](http://badge.fury.io/rb/tdd) 
 [![Code Climate](https://codeclimate.com/github/ubermajestix/tdd.png)](https://codeclimate.com/github/ubermajestix/tdd)
 
-####A simple command line tool for watching files and running tests when those files change. 
+####A simple command line tool for running tests when files change. 
 #####Yes, it is awesome.
 
 Examples
