@@ -243,11 +243,17 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
       say("# starting test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ @command }", :color => :magenta)
       say("# #{files.size > 1 ? 'files' : 'file'} changed: #{files.join(', ')}", :color => :magenta) if files && files.any?
       puts
-      tests_out = `#{@command}`  
-      tests_pass = $?.success?
-      puts tests_out 
-
-      say("# finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ $?.exitstatus }", :color => :yellow)
+      begin
+        tests_out = `#{@command}`
+        tests_pass = $?.success?
+        exit_status = $?.exitstatus
+        puts tests_out 
+        say("# finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ exit_status }", :color => :yellow)
+      rescue Interrupt
+        puts
+        say("# stopping tests - ctl-c again to exit tdd", :color => :red)
+        puts line
+      end
       if tests_pass
         system("command -v blink1-tool > /dev/null && blink1-tool -d0 --rgb 0,255,0 --blink 3 > /dev/null &")
         growl("passed", "tdd - Tests Passed", tests_out)
@@ -287,7 +293,13 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
           end
         end
       end
-      tdd.call(entries_changed) if entries_changed.any?
+      begin
+        tdd.call(entries_changed) if entries_changed.any?
+      rescue Interrupt
+        puts "="*45
+        puts 'Hit ctl-c again to quit' 
+        puts "="*45
+      end
       $running = false
     end
 
