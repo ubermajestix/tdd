@@ -244,10 +244,9 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
       say("# #{files.size > 1 ? 'files' : 'file'} changed: #{files.join(', ')}", :color => :magenta) if files && files.any?
       puts
       begin
-        tests_out = `#{@command}`
+        tests_results = system(@command, :out => $stdout, :err => :out)
         tests_pass = $?.success?
         exit_status = $?.exitstatus
-        puts tests_out 
         say("# finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ exit_status }", :color => :yellow)
       rescue Interrupt
         puts
@@ -256,10 +255,10 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
       end
       if tests_pass
         system("command -v blink1-tool > /dev/null && blink1-tool -d0 --rgb 0,255,0 --blink 3 > /dev/null &")
-        growl("passed", "tdd - Tests Passed", tests_out)
+        growl("passed", "tdd - Tests Passed", '')
       else
         system("command -v blink1-tool > /dev/null && blink1-tool -d0 --rgb 255,0,0 --blink 3 > /dev/null &")
-        growl("failed", "tdd - Tests Failed", tests_out, true)
+        growl("failed", "tdd - Tests Failed", '', true)
       end
       puts
       n.succ!
