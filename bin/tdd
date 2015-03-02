@@ -7,6 +7,7 @@ require 'ruby_gntp'
 # You can find the source here: http://github.com/ahoward/rego.
 
 Main {
+  version Tdd::VERSION
 
   name <<-__
 
@@ -112,6 +113,12 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
     description "Don't watch files/dirs if they are ignored by git. Defaults to true."
   }
 
+  option('no-bundle'){
+    default false
+    cast :boolean
+    description "Skip running tests with `bundle exec` if Gemfile found in current directory"
+  }
+
   def run
     print_usage_and_exit if ARGV.empty?
     parse_options
@@ -139,11 +146,12 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
   def parse_options
     @gitignore = params['gitignore'].value
     @use_growl = params['growl'].value
+    @no_bundle = params['no-bundle'].value
     ARGV.delete_if{|arg| arg =~ /--gitignore.*|--growl.*/}
   end
 
   def parse_the_command_line
-    @paths, @command = Tdd::CommandLineParser.parse
+    @paths, @command = Tdd::CommandLineParser.parse(@no_bundle)
     @paths = %w[.] if @paths.empty?
     expand_all_file_paths_in_array(@paths)
     

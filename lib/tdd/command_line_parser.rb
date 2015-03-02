@@ -1,12 +1,13 @@
 class Tdd::CommandLineParser
-  def self.parse
-    parser = self.new
+  def self.parse(no_bundle=false)
+    parser = self.new(no_bundle)
     [parser.paths.flatten, parser.test_command]
   end
 
   attr_accessor :paths, :test_framework
 
-  def initialize
+  def initialize(no_bundle=false)
+    @no_bundle = no_bundle
     pos = ARGV.index('--')
     if pos
       @paths = ARGV[0 ... pos]
@@ -23,7 +24,9 @@ class Tdd::CommandLineParser
   end
 
   def test_command
-    "#{@test_framework} #{@test_args}"
+    command = "#{@test_framework} #{@test_args}"
+    command.prepend("bundle exec ") if bundle_exec?
+    command
   end
 
   private
@@ -68,5 +71,10 @@ class Tdd::CommandLineParser
     else
       exit_if_no_test_framework
     end
+  end
+
+  def bundle_exec?
+    return false if @no_bundle
+    Dir.glob("Gemfile*").any?
   end
 end
