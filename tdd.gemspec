@@ -17,6 +17,6 @@ Gem::Specification.new do |gem|
   
 
   gem.add_runtime_dependency "main", "~> 5.0"
-  gem.add_runtime_dependency "rb-fsevent", "~> 0.9"
+  gem.add_runtime_dependency "rb-fsevent", "~> 0.10"
   gem.add_runtime_dependency "ruby_gntp"
 end

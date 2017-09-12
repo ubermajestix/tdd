@@ -240,7 +240,6 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
         nil
       end
     end
-    fsevent = FSEvent.new
 
     n = '0'
     line = '#' * 42
@@ -248,14 +247,16 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
 
     tdd = proc do |files|
       puts line
-      say("# starting test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ @command }", :color => :magenta)
+      start_time = Time.now
+      say("# Starting test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ @command }", :color => :magenta)
       say("# #{files.size > 1 ? 'files' : 'file'} changed: #{files.join(', ')}", :color => :magenta) if files && files.any?
       puts
       begin
         tests_results = system(@command, :out => $stdout, :err => :out)
         tests_pass = $?.success?
         exit_status = $?.exitstatus
-        say("# finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } - #{ exit_status }", :color => :yellow)
+        took = Time.now - start_time
+        say("# Finished test run #{ n } @ #{ Time.now.strftime('%H:%M:%S') } Took: #{took}s - Exit Status: #{ exit_status }", :color => :yellow)
       rescue Interrupt
         puts
         say("# stopping tests - ctl-c again to exit tdd", :color => :red)
@@ -274,18 +275,19 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
 
     tdd.call
 
-    fsevent.watch(directories) do |*args|
+    fsevent = FSEvent.new
+    fsevent.watch(directories) do |changed_directories, event_meta|
       entries_changed = []
       unless $running
         $running = true
-        args.flatten.each do |dir|
+        # Recurse through all the files in the directory that changed and look
+        # for files that have been modified.
+        changed_directories.flatten.each do |dir|
           glob = File.join(dir, '**/**')
           entries = Dir.glob(glob)
-
           entries.each do |entry|
             entry = File.expand_path(entry)
             next unless stats.has_key?(entry)
-
             begin
               stats[entry] ||= File.stat(entry)
               before = stats[entry]
@@ -309,7 +311,6 @@ In Growl's preferences you can enable/disable both 'passed' and 'failed' notifs.
       end
       $running = false
     end
-
     fsevent.run
   end
 }
