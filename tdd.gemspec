@@ -14,6 +14,7 @@ Gem::Specification.new do |gem|
   gem.name          = "tdd"
   gem.require_paths = ["lib"]
   gem.version       = Tdd::VERSION
+  gem.license = 'MIT'
   
 
   gem.add_runtime_dependency "main", "~> 5.0"
