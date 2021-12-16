@@ -25,6 +25,7 @@ class Tdd::CommandLineParser
 
   def test_command
     command = "#{@test_framework} #{@test_args}"
+    command.prepend("bin/") if binstubs?
     command.prepend("bundle exec ") if bundle_exec?
     command
   end
@@ -74,7 +75,12 @@ class Tdd::CommandLineParser
   end
 
   def bundle_exec?
-    return false if @no_bundle
+    return false if @no_bundle || binstubs?
     Dir.glob("Gemfile*").any?
+  end
+
+  def binstubs?
+    (@test_framework == 'rspec' && File.exists?('bin/rspec')) ||
+      (@test_args.match(/^rake/) && File.exists?('bin/rake'))
   end
 end
